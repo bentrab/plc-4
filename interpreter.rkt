@@ -34,7 +34,7 @@
                                   (lambda (v env) (myerror "Uncaught exception thrown"))))))))
 
 ; interprets a list of statements.  The environment from each statement is used for the next ones.
-(define interpret-statement-list
+(define interpret-statement-list ; need to deal with classes here now
   (lambda (statement-list environment return break continue throw)
     (if (null? statement-list)
         (eval-main environment return break continue throw)
@@ -58,9 +58,14 @@
       ((eq? 'function-call (statement-type statement)) (interpret-func-env (cadr (lookup (func-name (functionless statement)) environment)) (add-params-env (params (lookup (func-name (functionless statement)) environment)) (params (functionless statement)) (push-frame environment) throw)
                                                                                        return
                                                                                        break continue throw))
-      (else (myerror "Invalid: " (statement-type statement))))))
-    
+      ;We need code here to interpret a 'new and a 'class
+      (else (myerror "Invalid: " (statement-type statement)))
+      )))
 
+;here we need interpret-class
+; we need a function that makes a state layer from the instance fields
+; we need to add interpret dot
+; we need to add interpret new object
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
 (define interpret-declare
   (lambda (statement environment return break continue throw)
