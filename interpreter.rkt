@@ -4,7 +4,7 @@
 
 ; If you are using scheme instead of racket, comment these two lines, uncomment the (load "simpleParser.scm") and comment the (require "simpleParser.rkt")
 #lang racket
-(require "functionParser.rkt")
+(require "classParser.rkt")
 ; (load "simpleParser.scm")
 
 
@@ -195,13 +195,26 @@
 (define find-function
   (lambda (environment func-name)
     (cond
+      ((null? environment) (myerror "no function found"))
         ((eq? func-name (cadar environment)) (cddar environment))
         (else (find-function (cdr environment) func-name)))))
 
 ;evaluates the main function
 (define eval-main
-  (lambda (environment return break continue throw)
-      (interpret-statement-list (statement-list (find-function environment 'main)))))
+  (lambda (class-name environment return break continue throw)
+    (cond
+      ((not (exists? class-name environment)) (myerror "Undefined class")) ;this should check if main is associated with a statement list in the env
+      (else (interpret-statement-list (statement-list (find-function (cadr (lookup class-name environment)) 'main))
+                                      (make-statelayer-from-instance-fields (cadr (lookup class-name environment))(push-frame environment) return break continue throw)
+                                      class-name return break continue throw)))))
+
+
+; passes instance fields to the interpret-statement function
+(define make-statelayer-from-instance-fields
+  (lambda (class-closure environment return break continue throw)
+    (cond
+      ((null? class-closure) environment)
+      ((list? (car class-closure)) (make-statelayer-from-instance-fields (cdr class-closure) (interpret-statement (car class-closure) environment return break continue throw) return break continue throw)))))
 
 (define add-params-env
   (lambda (param-names param-values environment throw)
