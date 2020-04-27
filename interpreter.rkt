@@ -15,29 +15,24 @@
 ; The functions that start interpret-...  all return the current environment.
 ; The functions that start eval-...  all return a value
 
-(define breakOutsideLoopError
-  (lambda (env) (myerror "Break used outside loop")))
-
-(define continueOutsideLoopError
-  (lambda (env) (myerror "Continue used outside of loop")))
 
 (define functionless cdr)
 
 ; The main function.  Calls parser to get the parse tree and interprets it with a new environment.  The returned value is in the environment.
 (define interpret
-  (lambda (file)
+  (lambda (file classname)
     (scheme->language
      (call/cc
       (lambda (return)
-        (interpret-statement-list (parser file) (newenvironment) return
+        (interpret-statement-list (parser file) (newenvironment) classname return
                                   (lambda (env) (myerror "Break used outside of loop")) (lambda (env) (myerror "Continue used outside of loop"))
                                   (lambda (v env) (myerror "Uncaught exception thrown"))))))))
 
 ; interprets a list of statements.  The environment from each statement is used for the next ones.
-(define interpret-statement-list ; need to deal with classes here now
-  (lambda (statement-list environment return break continue throw)
+(define interpret-statement-list 
+  (lambda (statement-list environment classname return break continue throw)
     (if (null? statement-list)
-        (eval-main environment return break continue throw)
+        (eval-main classname environment return break continue throw)
         (interpret-statement-list (cdr statement-list) (interpret-statement (car statement-list) environment return break continue throw) return break continue throw))))
 
 ; interpret a statement in the environment with continuations for return, break, continue, throw
@@ -228,12 +223,12 @@
 
 ;evaluates the main function
 (define eval-main
-  (lambda (class-name environment return break continue throw)
+  (lambda (classname environment return break continue throw)
     (cond
-      ((not (exists? class-name environment)) (myerror "Undefined class")) ;this should check if main is associated with a statement list in the env
-      (else (interpret-statement-list (statement-list (find-function (cadr (lookup class-name environment)) 'main))
-                                      (pass-instance-to-state (cadr (lookup class-name environment))(push-frame environment) return break continue throw)
-                                      class-name return break continue throw)))))
+      ((not (exists? classname environment)) (myerror "No class found")) 
+      (else (interpret-statement-list (statement-list (find-function (cadr (lookup classname environment)) 'main))
+                                      (pass-instance-to-state (cadr (lookup classname environment))(push-frame environment) return break continue throw)
+                                      classname return break continue throw)))))
 
 
 ; passes instance fields to the interpret-statement function
