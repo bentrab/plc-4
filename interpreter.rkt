@@ -61,6 +61,7 @@
       ;We need code here to interpret a 'new and a 'class
       (else (myerror "Invalid: " (statement-type statement)))
       )))
+
 (define name-of car)
 (define rest-of cdr)
 
@@ -88,14 +89,9 @@
     (cond
       [(null? statement) (myerror "missing statement")]
       [(null? (lookup (new-name statement) env)) (myerror "missing class")]
-      [else (insert (name statement) (make-field-state (class-closure (lookup (new-name statement) env)) (newenvironment) return break continue throw) env)])))
+      [else (insert (name statement) (pass-instance-to-state (class-closure (lookup (new-name statement) env)) (newenvironment) return break continue throw) env)])))
 
-(define make-field-state
-  (lambda (closure env return break continue throw)
-    (cond
-      [(null? closure) env]
-      [(list? (car closure)) (make-field-state (cdr closure) (interpret-statement (car closure) env return break continue throw) return break continue throw)]
-      )))
+
 ; Finished making state from instance fields, new, dot and class
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
 (define interpret-declare
@@ -236,16 +232,16 @@
     (cond
       ((not (exists? class-name environment)) (myerror "Undefined class")) ;this should check if main is associated with a statement list in the env
       (else (interpret-statement-list (statement-list (find-function (cadr (lookup class-name environment)) 'main))
-                                      (make-statelayer-from-instance-fields (cadr (lookup class-name environment))(push-frame environment) return break continue throw)
+                                      (pass-instance-to-state (cadr (lookup class-name environment))(push-frame environment) return break continue throw)
                                       class-name return break continue throw)))))
 
 
 ; passes instance fields to the interpret-statement function
-(define make-statelayer-from-instance-fields
+(define pass-instance-to-state
   (lambda (class-closure environment return break continue throw)
     (cond
       ((null? class-closure) environment)
-      ((list? (car class-closure)) (make-statelayer-from-instance-fields (cdr class-closure) (interpret-statement (car class-closure) environment return break continue throw) return break continue throw)))))
+      ((list? (car class-closure)) (pass-instance-to-state (cdr class-closure) (interpret-statement (car class-closure) environment return break continue throw) return break continue throw)))))
 
 (define add-params-env
   (lambda (param-names param-values environment throw)
