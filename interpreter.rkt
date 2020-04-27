@@ -61,11 +61,42 @@
       ;We need code here to interpret a 'new and a 'class
       (else (myerror "Invalid: " (statement-type statement)))
       )))
+(define name-of car)
+(define rest-of cdr)
 
-;here we need interpret-class
-; we need a function that makes a state layer from the instance fields
-; we need to add interpret dot
-; we need to add interpret new object
+(define interpret-class
+  (lambda (closure environment)
+    (cond
+      [(null? closure) (myerror "No closure")]
+      [else (insert (name-of closure) (rest-of closure) environment)])))
+
+(define interpret-dot
+  (lambda (name field environment throw)
+    (cond
+      [(null? name) (myerror "missing name")]
+      [(null? field) (myerror "missing field")]
+      [(eq? name 'this) (eval-expression field (pop-frame environment) throw)]
+      [(eq? name 'super) (eval-expression field (pop-frame (pop-frame environment)) throw)]
+      [else (eval-expression field (append (lookup name environment) environment) throw)])))
+
+(define new-name cadadr)
+(define name car)
+(define class-closure cadr)
+  
+(define interpret-new
+  (lambda (statement env return break continue throw)
+    (cond
+      [(null? statement) (myerror "missing statement")]
+      [(null? (lookup (new-name statement) env)) (myerror "missing class")]
+      [else (insert (name statement) (make-field-state (class-closure (lookup (new-name statement) env)) (newenvironment) return break continue throw) env)])))
+
+(define make-field-state
+  (lambda (closure env return break continue throw)
+    (cond
+      [(null? closure) env]
+      [(list? (car closure)) (make-field-state (cdr closure) (interpret-statement (car closure) env return break continue throw) return break continue throw)]
+      )))
+; Finished making state from instance fields, new, dot and class
 ; Adds a new variable binding to the environment.  There may be an assignment with the variable
 (define interpret-declare
   (lambda (statement environment return break continue throw)
