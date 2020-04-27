@@ -53,7 +53,8 @@
       ((eq? 'function-call (statement-type statement)) (interpret-func-env (cadr (lookup (func-name (functionless statement)) environment)) (add-params-env (params (lookup (func-name (functionless statement)) environment)) (params (functionless statement)) (push-frame environment) throw)
                                                                                        return
                                                                                        break continue throw))
-      ;We need code here to interpret a 'new and a 'class
+      ((eq? 'new (statement-type statement)) (interpret-new (cdr statement) environment return break continue throw))
+      ((eq? 'class (statement-type statement)) (interpret-class (cdr statement) environment))
       (else (myerror "Invalid: " (statement-type statement)))
       )))
 
